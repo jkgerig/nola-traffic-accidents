@@ -15,6 +15,13 @@
 - [Permits](https://data.nola.gov/Housing-Land-Use-and-Blight/Permits/rcm3-fn58)
 - [Sewerage and Water Board Projects](https://data.nola.gov/Transportation-and-Infrastructure/Sewerage-Water-Board-Projects/jg5k-uvi2)
 - [Dept. of Public Works RoadWork Projects](https://data.nola.gov/Transportation-and-Infrastructure/Dept-of-Public-Works-RoadWork-Projects/gbxh-56wk)
+- [EPR 2012](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2012/x7yt-gfg9)
+- [EPR 2013](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2013/je4t-6qub)
+- [EPR 2014](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2014/6mst-xjhm)
+- [EPR 2015](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2015/9ctg-u58a)
+- [EPR 2016](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2016/4gc2-25he)
+- [EPR 2017](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2017/qtcu-97s9)
+- [EPR 2018](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2018/3m97-9vtw)
 
 ## Project Organization
 
