@@ -12,8 +12,6 @@
 - [Calls for Service 2017](https://data.nola.gov/Public-Safety-and-Preparedness/Calls-for-Service-2017/bqmt-f3jk)
 - [Calls for Service 2018](https://data.nola.gov/Public-Safety-and-Preparedness/Calls-for-Service-2018/9san-ivhk)
 - [311 Calls](https://data.nola.gov/City-Administration/311-Calls-2012-Present-/3iz8-nghx)
-- [Permits](https://data.nola.gov/Housing-Land-Use-and-Blight/Permits/rcm3-fn58)
-- [Sewerage and Water Board Projects](https://data.nola.gov/Transportation-and-Infrastructure/Sewerage-Water-Board-Projects/jg5k-uvi2)
 - [Dept. of Public Works RoadWork Projects](https://data.nola.gov/Transportation-and-Infrastructure/Dept-of-Public-Works-RoadWork-Projects/gbxh-56wk)
 - [EPR 2012](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2012/x7yt-gfg9)
 - [EPR 2013](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2013/je4t-6qub)
@@ -22,6 +20,8 @@
 - [EPR 2016](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2016/4gc2-25he)
 - [EPR 2017](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2017/qtcu-97s9)
 - [EPR 2018](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2018/3m97-9vtw)
+- [Streetlights](https://data.nola.gov/dataset/Streetlights/ut7r-kcda)
+- [Neighborhoods](https://data.nola.gov/Geographic-Base-Layers/Neighborhood-Statistical-Areas/c2j2-5qdf)
 
 ## Project Organization
 
