@@ -2,6 +2,10 @@
 
 > An investigation of the causes of traffic accidents in New Orleans, LA.
 
+## References
+
+- [Weather](https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/LCD_documentation.pdf)
+
 ## Data
 
 - [Calls for Service 2012](https://data.nola.gov/Public-Safety-and-Preparedness/Calls-for-Service-2012/rv3g-ypg7)
