@@ -27,6 +27,7 @@
 - [EPR 2018](https://data.nola.gov/Public-Safety-and-Preparedness/Electronic-Police-Report-2018/3m97-9vtw)
 - [Streetlights](https://data.nola.gov/dataset/Streetlights/ut7r-kcda)
 - [Neighborhoods](https://data.nola.gov/Geographic-Base-Layers/Neighborhood-Statistical-Areas/c2j2-5qdf)
+- [Holidays](https://www.timeanddate.com/)
 
 ## Project Organization
 
