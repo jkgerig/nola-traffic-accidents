@@ -5,6 +5,7 @@
 ## References
 
 - [Weather](https://www1.ncdc.noaa.gov/pub/data/cdo/documentation/LCD_documentation.pdf)
+- [More Weather](https://www1.ncdc.noaa.gov/pub/data/ish/ish-format-document.pdf)
 
 ## Data
 
