@@ -352,7 +352,7 @@ streets_freeway = streets[streets['roadclass'] == 'Freeway'].plot(ax=streets_maj
 ```
 
 
-![png](output_3_0.png)
+![png](../reports/figures/output_3_0.png)
 
 
 
@@ -373,7 +373,7 @@ accidents.plot(ax=nhood_base, marker='*', color='red', markersize=1, alpha=.2)
 
 
 
-![png](output_4_1.png)
+![png](../reports/figures/output_4_1.png)
 
 
 ### Charts
@@ -409,7 +409,7 @@ _ = accident_samples.groupby(['month']).size().plot(kind='bar')
 ```
 
 
-![png](output_11_0.png)
+![png](../reports/figures/output_11_0.png)
 
 
 **Day of Week**
@@ -420,7 +420,7 @@ _ = accident_samples.groupby(['day']).size().plot(kind='bar')
 ```
 
 
-![png](output_13_0.png)
+![png](../reports/figures/output_13_0.png)
 
 
 **Hour of Day**
@@ -438,7 +438,7 @@ _ = sns.heatmap(accidents_by_day_hour_pivoted, annot=True, fmt='d', linewidths=.
 ```
 
 
-![png](output_15_0.png)
+![png](../reports/figures/output_15_0.png)
 
 
 **Daylight**
@@ -449,7 +449,7 @@ _ = accident_samples.groupby(['daylight_yn']).size().plot(kind='bar')
 ```
 
 
-![png](output_17_0.png)
+![png](../reports/figures/output_17_0.png)
 
 
 **Holiday**
@@ -460,7 +460,7 @@ _ = accident_samples.groupby(['holiday_yn']).size().plot(kind='bar')
 ```
 
 
-![png](output_19_0.png)
+![png](../reports/figures/output_19_0.png)
 
 
 **Rush Hour**
@@ -471,7 +471,7 @@ _ = accident_samples.groupby(['rush_hour_yn']).size().plot(kind='bar')
 ```
 
 
-![png](output_21_0.png)
+![png](../reports/figures/output_21_0.png)
 
 
 ### Weather Distribution
@@ -484,7 +484,7 @@ _ = plt.hist(accident_samples.temp, bins=16)
 ```
 
 
-![png](output_24_0.png)
+![png](../reports/figures/output_24_0.png)
 
 
 **Wind**
@@ -495,7 +495,7 @@ _ = plt.hist(accident_samples.wind_speed, bins=25)
 ```
 
 
-![png](output_26_0.png)
+![png](../reports/figures/output_26_0.png)
 
 
 **Precipitation**
@@ -507,7 +507,7 @@ _ = plt.hist(rain_plot, bins=25)
 ```
 
 
-![png](output_28_0.png)
+![png](../reports/figures/output_28_0.png)
 
 
 ### Roads
@@ -522,7 +522,7 @@ _ = accident_samples[road_classes].idxmax(axis=1).value_counts().plot(kind='bar'
 ```
 
 
-![png](output_31_0.png)
+![png](../reports/figures/output_31_0.png)
 
 
 **Length**
@@ -541,7 +541,7 @@ plt.rcParams['figure.figsize'][1] = 20
 ```
 
 
-![png](output_33_0.png)
+![png](../reports/figures/output_33_0.png)
 
 
 
