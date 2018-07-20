@@ -11,16 +11,18 @@
     - [Problem Solving Approach](#problem-solving-approach)
     - [Deliverables](#deliverables)
 - [Methods](#methods)
-    - [Inital Investigation](#inital-investigation)
-        - [Codes](#codes)
     - [Data Wrangling](#data-wrangling)
-- [Results](#results)
-    - [Statistics/Visuals](#statisticsvisuals)
-        - [Maps](#maps)
-        - [Charts](#charts)
-        - [Accident Counts by Date](#accident-counts-by-date)
-        - [Weather Distribution](#weather-distribution)
+        - [Accidents](#accidents)
         - [Roads](#roads)
+        - [Temporal Data](#temporal-data)
+        - [Weather](#weather)
+        - [Join Accidents to Roads](#join-accidents-to-roads)
+        - [Compiled Features](#compiled-features)
+- [Results](#results)
+    - [Maps](#maps)
+    - [Accident Counts by Date](#accident-counts-by-date)
+    - [Weather Distribution](#weather-distribution)
+    - [Roads](#roads)
     - [Models](#models)
 - [Conclusions](#conclusions)
 - [Limitations](#limitations)
@@ -53,11 +55,22 @@ For this project, I will provide the code used to perform the data cleaning and 
 
 # Methods
 
-## Inital Investigation
-
 I intially thought to add additional data related to other activities in the city (all also available on https://data.nola.gov, such as information from police reports, 311 calls, and Department of Public Works Roadwork Projects.
 
-### Codes
+## Data Wrangling
+
+My approach in data wrangling was to process each category of data separately and then merge them together according to time and location for my final dataset. The high-level steps I took are as follows:
+
+1. Process accidents data
+2. Process road data
+3. Process time-based data
+4. Process weather-based data
+5. Join accidents to roads
+6. Combine all previous steps into single dataset indexed by date/time and location
+
+### Accidents
+
+The call data included a 'type' field which classifies the nature of the call. In general, '100' refers to a hit and run while a '20' refers to a traffic accident. The letter codes indicate more specific things such as injuries, fatalities, and accidents involving city vehicles. The 'disposition' field refers to what first responders discovered upon arrival at the scene. 'NAT' means 'necessary action taken', 'RTF' means 'report to follow', while 'GOA' refers to 'gone on arrival'. When dealing with traffic accidents without injuries, it is not uncommon for responders to take a long time to arrive, so 'gone on arrival' is to be expected for some of these cases.
 
 ```python
 target_types = ['100', '100C', '100F', '100I', '100X', '20', '20C', '20F', '20I', '20X']
@@ -65,17 +78,9 @@ target_types = ['100', '100C', '100F', '100I', '100X', '20', '20C', '20F', '20I'
 target_dispositions = ['NAT', 'RTF', 'GOA']
 ```
 
-## Data Wrangling
+### Roads
 
-```python
-intersections = accidents[accidents.BLOCK_ADDRESS.str.contains('&', na=False)].BLOCK_ADDRESS.str.split('&')
-intersection_street_1 = intersections.str.get(0).str.strip()
-intersection_street_2 = intersections.str.get(1).str.strip()
-
-single_street = accidents[np.logical_not(accidents.BLOCK_ADDRESS.str.contains('&', na=True))].BLOCK_ADDRESS
-single_street_1 = single_street[single_street.str.split(' ', n=1).str.get(0).str.contains('X', na=False)].str.split(' ', n=1).str.get(1).str.strip()
-single_street_2 = single_street[np.logical_not(single_street.str.split(' ', n=1).str.get(0).str.contains('X', na=True))].str.strip()
-```
+Road data was processed to result in two primary features (one continuous, the other categorical):
 
 - Road Length
 - Road Type ('Class')
@@ -86,10 +91,11 @@ single_street_2 = single_street[np.logical_not(single_street.str.split(' ', n=1)
     - Freeway (y/n)
     - Other (y/n)
 
-1. Spatial Join
-2. Keep single matches, further process multiple matches
-3. Find centroid of streets, match to neighborhood, then rematch with street geometry
-4. Concat all final matches, then dissolve block-by-block street segments into neighborhood-size lengths
+My goal was to find a reasonably-sized road segment as the unit of analysis. Making road segments too large would make predictions relatively meaningless, while too small might be difficult for the model. I ended up merging the road data with neighborhood data available from the city resulting in road segments that stretch the length of a single neighborhood, as defined by the City of New Orleans. To do this, I used the `dissolve` function from the `geopandas` python package. This is a method of aggregating spatial data based on some non-spatial feature. In this case, I used the neighborhood id field and 'dissolved' the boundaries between block-level roads within any given neighborhood, creating larger road segments that still were small enough to be useful for prediction and allocating emergency resources.
+
+### Temporal Data
+
+I constructed five features based on time:
 
 - Date
 - Hour
@@ -97,43 +103,9 @@ single_street_2 = single_street[np.logical_not(single_street.str.split(' ', n=1)
 - Holiday (y/n)
 - Rush Hour (y/n)
 
-```python
-relevant_holidays = [
-    "New Year's Day",
-    "'New Year's Day' observed",
-    'Martin Luther King Jr. Day',
-    "Valentine's Day",
-    "Presidents' Day (Most regions)",
-    'Ash Wednesday',
-    "St. Patrick's Day",
-    'Palm Sunday',
-    'Maundy Thursday',
-    'Good Friday (Many regions)',
-    'Holy Saturday',
-    'Easter Sunday',
-    'Easter Monday',
-    'Cinco de Mayo',
-    "Mother's Day",
-    'Memorial Day',
-    "Father's Day",
-    'Independence Day',
-    'Labor Day',
-    'Columbus Day (Most regions)',
-    'Halloween',
-    "All Saints' Day",
-    "All Souls' Day",
-    'Election Day',
-    'Veterans Day',
-    'Thanksgiving Day',
-    'Black Friday',
-    'Christmas Eve',
-    'Christmas Day',
-    "New Year's Eve",
-    "'Independence Day' observed",
-    'Day After Christmas Day',
-    "'Christmas Day' observed",
-    'Veterans Day observed']
+In order to account for holidays celebrated regionally, I used timedelta offsets from Ash Wednesday, a nationally recognized holiday available in my time dataset, to calculate important dates around Mardi Gras parades.
 
+```python
 ash_wednesdays = holidays[holidays['holiday'] == 'Ash Wednesday']
 mardi_gras = ash_wednesdays.date + pd.Timedelta('-1 day')
 lundi_gras = ash_wednesdays.date + pd.Timedelta('-2 days')
@@ -143,9 +115,17 @@ mardi_gras_friday = ash_wednesdays.date + pd.Timedelta('-5 days')
 mardi_gras_thursday = ash_wednesdays.date + pd.Timedelta('-6 days')
 ```
 
-- Temperature
-- Wind Speed
-- Precipitation Total
+### Weather
+
+For weather data, the following variables were included:
+
+- Temperature (degrees F)
+- Wind Speed (mph)
+- Precipitation Total (inches)
+
+I examined two weather datasets, each from a different airport in the New Orleans area. While the Lakefront airport was more centrally located to most of New Orleans, there were significant gaps in the data, particularly temperature data, which made it difficult to interpolate missing values. I instead used data from the main New Orleans Airport which is west of the city itself. There were still a few missing data points, but it was much safer to interpolate those missing values because there were no gaps longer than a few hours.
+
+The data included measurements taken at various times throughout the hour, so I resampled the data to a 1-hour time-series index.
 
 ```python
 weather_airport_by_hour = weather_airport.resample('1h').max()
@@ -155,127 +135,65 @@ weather_airport_by_hour['temp'] = weather_airport_by_hour.temp.interpolate()
 weather_airport_by_hour['wind_speed'] = weather_airport_by_hour.wind_speed.interpolate()
 ```
 
+### Join Accidents to Roads
+
+I had several ideas about how to join the accident data with specific road segments. Once I decided to use neighborhood sized road segments, I decided that I would use the following process to assign each accident to a specific road segment:
+
+**Spatially join accidents to neighborhoods**
+
 ```python
-neighborhoods = gpd.read_file('../../data/raw/Neighborhood_Statistical_Areas/Neighborhood_Statistical_Areas.shp')
-neighborhoods = neighborhoods.to_crs(epsg=4326)
-neighborhoods = neighborhoods[['OBJECTID', 'GNOCDC_LAB', 'geometry']]
-neighborhoods.columns = ['nhood_id', 'nhood', 'geometry']
-
-accidents = pd.read_pickle('../../data/interim/features/accidents.pickle')
-accidents['geometry'] = list(zip(accidents.lon, accidents.lat))
-accidents['geometry'] = accidents.geometry.apply(shp.geometry.Point)
-accidents = gpd.GeoDataFrame(accidents, geometry='geometry')
-accidents.crs = {'init' :'epsg:4326'}
-
 accidents_in_neighborhoods = gpd.sjoin(accidents, neighborhoods)
+```
 
-accidents_in_neighborhoods['ItemNumber'] = accidents_in_neighborhoods.index
+**Within each neighborhood, attempt to match each accident to a street segment based on the street names**
 
-columns = ['ItemNumber', 'TimeCreate', 'street_1', 'street_2', 'geometry', 'nhood_id', 'nhood']
-accidents_in_neighborhoods = accidents_in_neighborhoods[columns]
-
+```python
 accidents_join_street = pd.merge(accidents_in_neighborhoods,
                                  streets,
                                  left_on=['street_1', 'nhood_id'],
                                  right_on=['fullnameab', 'nhood_id'])
+```
 
-# select unmatched accidents
-unmatched_accidents = accidents_in_neighborhoods[~accidents_in_neighborhoods.index.isin(accidents_join_street.ItemNumber)]
+**For unmatched accidents, construct buffers of 50', 100', and 250'. Beginning with the 50' buffer, spatially join the 'buffered' accidents with street segments, keeping only matches which remain within a single neighborhood, proceeding to larger buffers as needed for unmatched accidents**
 
-rematched_accidents = pd.merge(unmatched_accidents,
-                               streets,
-                               left_on=['street_2', 'nhood_id'],
-                               right_on=['fullnameab', 'nhood_id'])
-
-no_street_match = unmatched_accidents[~unmatched_accidents.index.isin(rematched_accidents.ItemNumber)]
-
-street_match = pd.concat([accidents_join_street, rematched_accidents], ignore_index=True)
-street_match = street_match[['ItemNumber', 'TimeCreate', 'segment_id']]
-
-no_street_match = no_street_match.to_crs(crs_louisiana)
-
-unmatched_items = no_street_match.index
-
-no_street_match['buffer_50'] = no_street_match.geometry.buffer(50)
-no_street_match['buffer_100'] = no_street_match.geometry.buffer(100)
-no_street_match['buffer_250'] = no_street_match.geometry.buffer(250)
-
-buffer_50 = no_street_match.set_geometry('buffer_50')
-buffer_100 = no_street_match.set_geometry('buffer_100')
-buffer_250 = no_street_match.set_geometry('buffer_250')
-
-streets_la_crs = streets.to_crs(crs_louisiana)
-
+```python
 spatial_join_50 = gpd.sjoin(buffer_50, streets_la_crs)
 spatial_join_100 = gpd.sjoin(buffer_100, streets_la_crs)
 spatial_join_250 = gpd.sjoin(buffer_250, streets_la_crs)
 
-nhood_match_50 = spatial_join_50[spatial_join_50.nhood_id_left == spatial_join_50.nhood_id_right]
-
-nhood_match_50_unique = nhood_match_50.groupby('ItemNumber').first()
-nhood_match_50_unique = nhood_match_50_unique.reset_index()
-nhood_match_50_unique = nhood_match_50_unique[['ItemNumber', 'TimeCreate', 'segment_id']]
-
 unmatched_items = unmatched_items[~unmatched_items.isin(nhood_match_50_unique.ItemNumber)]
+```
 
-spatial_join_100_unmatched = spatial_join_100[spatial_join_100.index.isin(unmatched_items)]
-nhood_match_100 = spatial_join_100_unmatched[spatial_join_100_unmatched.nhood_id_left == spatial_join_100_unmatched.nhood_id_right]
+**Concatenate all matches to a single data frame, and round off times of accidents to the hour for simplicity**
 
-nhood_match_100_unique = nhood_match_100.groupby('ItemNumber').first()
-nhood_match_100_unique = nhood_match_100_unique.reset_index()
-nhood_match_100_unique = nhood_match_100_unique[['ItemNumber', 'TimeCreate', 'segment_id']]
-
-unmatched_items = unmatched_items[~unmatched_items.isin(nhood_match_100_unique.ItemNumber)]
-
-spatial_join_250_unmatched = spatial_join_250[spatial_join_250.index.isin(unmatched_items)]
-nhood_match_250 = spatial_join_250_unmatched[spatial_join_250_unmatched.nhood_id_left == spatial_join_250_unmatched.nhood_id_right]
-
-nhood_match_250_unique = nhood_match_250.groupby('ItemNumber').first()
-nhood_match_250_unique = nhood_match_250_unique.reset_index()
-nhood_match_250_unique = nhood_match_250_unique[['ItemNumber', 'TimeCreate', 'segment_id']]
-
+```python
 dataframes = [street_match,
               nhood_match_50_unique,
               nhood_match_100_unique,
               nhood_match_250_unique]
 
-joined_matches = pd.concat(dataframes, ignore_index=True)
-
-street_by_time = joined_matches.groupby(['segment_id', 'TimeCreate']).count().reset_index()
-
-street_by_time['day_hour'] = street_by_time.TimeCreate.dt.date.astype('str') \
-                             + ' ' \
-                             + street_by_time.TimeCreate.dt.hour.astype('str') \
-                             + ':00:00'
-
-street_by_time['day_hour'] = pd.to_datetime(street_by_time.day_hour)
-
-street_by_time = street_by_time[['day_hour', 'segment_id', 'ItemNumber']]
 street_by_time.columns = ['day_hour', 'segment_id', 'accident_yn']
-
-street_by_time.to_pickle('../../data/interim/features/street_by_time.pickle')
 ```
+
+### Compiled Features
 
 **Goal: Dataset for all accidents that is indexed by ROAD SEGMENT and DATETIME**
 
-1. Merge information from other datasets into accidents dataset
-2. Select 3 negative samples for each positive (accident) sample according to methodology from article
-3. Append negative samples to positive samples and clean up final output dataset
+I constructed ranges for the sample space of all eligible dates, times, and road segments for selection of negative samples (spaces/times *without* an accident). I then created a dataframe with 1,000,000 combinations of samples. I removed duplicates, and then removed any samples that were present in the accidents dataset, meaning it was a positive sample. I then chose three times the number of positive samples at random from this dataframe.
 
 ```python
 np.random.seed(42)
 sample_space_date = pd.Series(pd.date_range('2012-01-01', '2018-06-30')).dt.date
 sample_space_hour = pd.Series([x for x in range(24)])
 sample_space_location = street_info.segment_id.sort_values().reset_index(drop=True)
-```
 
-
-```python
 n_rows = 1000000
 sample_dates = np.random.choice(sample_space_date, size=n_rows)
 sample_hours = np.random.choice(sample_space_hour, size=n_rows)
 sample_locations = np.random.choice(sample_space_location, size=n_rows)
 ```
+
+My final dataset contained the following features, plus the accident outcome variable:
 
 ```python
 renamed_cols = ['date',
@@ -298,252 +216,61 @@ renamed_cols = ['date',
 
 # Results
 
-## Statistics/Visuals
-
-```python
-streets = gpd.read_file('../../data/raw/Road_Centerline/geo_export_c02761a8-1d85-477e-a5cf-01b9f22f4d88.shp')
-street_columns = ['joinid', 'roadclass', 'fullname', 'geometry']
-streets = streets[street_columns]
-streets = streets.dissolve(by='joinid', aggfunc='first')
-streets['roadclass'] = streets.roadclass.fillna('Other')
-
-neighborhoods = gpd.read_file('../../data/raw/Neighborhood_Statistical_Areas/Neighborhood_Statistical_Areas.shp')
-nhood_columns = ['OBJECTID', 'GNOCDC_LAB', 'geometry']
-neighborhoods = neighborhoods[nhood_columns]
-neighborhoods.columns = ['nhood_id', 'nhood', 'geometry']
-neighborhoods.set_index('nhood_id', inplace=True)
-neighborhoods = neighborhoods.to_crs(epsg=4326)
-
-sample_data = pd.read_pickle('../../data/processed/all_samples.pickle')
-sample_data['datetime'] = pd.to_datetime(sample_data.date)
-
-accidents = pd.read_pickle('../../data/interim/features/accidents.pickle')
-accidents['geometry'] = list(zip(accidents.lon, accidents.lat))
-accidents['geometry'] = accidents.geometry.apply(shp.geometry.Point)
-accidents = gpd.GeoDataFrame(accidents, geometry='geometry')
-accidents.crs = {'init' :'epsg:4326'}
-```
-
-### Maps
-
-
-```python
-figure_size = (20, 20)
-
-nhood_base = neighborhoods.plot(figsize=figure_size,
-                                color='gray',
-                                edgecolor='black',
-                                alpha=.5)
-
-streets_local = streets[streets['roadclass'] == 'Local'].plot(ax=nhood_base,
-                                                              figsize=figure_size,
-                                                              color='white',
-                                                              alpha=.2)
-
-streets_major = streets[streets['roadclass'] == 'Major Arterial'].plot(ax=streets_local,
-                                                                       figsize=figure_size,
-                                                                       color='green',
-                                                                       alpha=.4)
-
-streets_freeway = streets[streets['roadclass'] == 'Freeway'].plot(ax=streets_major,
-                                                                  figsize=figure_size,
-                                                                  color='blue',
-                                                                  alpha=.5)
-```
-
+## Maps
 
 ![png](reports/figures/output_3_0.png)
 
-
-
-```python
-nhood_base = neighborhoods.plot(figsize=figure_size,
-                                color='gray',
-                                edgecolor='gray',
-                                alpha=.5)
-
-accidents.plot(ax=nhood_base, marker='*', color='red', markersize=1, alpha=.2)
-```
-
-
-
-
-    <matplotlib.axes._subplots.AxesSubplot at 0x16ba175f710>
-
-
-
-
 ![png](reports/figures/output_4_1.png)
 
-
-### Charts
-
-
-```python
-plt.style.use('ggplot')
-plt.rcParams['figure.figsize'][0] = 16
-plt.rcParams['figure.figsize'][1] = 9
-```
-
-
-```python
-accident_samples = sample_data[sample_data['accident_yn'] == 1].copy()
-```
-
-
-```python
-months = ['Jan', 'Feb', 'Mar', 'Apr','May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-accident_samples['month'] = pd.Categorical(accident_samples.datetime.dt.strftime('%b'), categories=months)
-
-days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-accident_samples['day'] = pd.Categorical(accident_samples.datetime.dt.strftime('%a'), categories=days)
-```
-
-### Accident Counts by Date
+## Accident Counts by Date
 
 **Month**
 
-
-```python
-_ = accident_samples.groupby(['month']).size().plot(kind='bar')
-```
-
-
 ![png](reports/figures/output_11_0.png)
-
 
 **Day of Week**
 
-
-```python
-_ = accident_samples.groupby(['day']).size().plot(kind='bar')
-```
-
-
 ![png](reports/figures/output_13_0.png)
-
 
 **Hour of Day**
 
-
-```python
-accidents_by_day_hour = accident_samples.groupby(['day', 'hour']).size().reset_index()
-accidents_by_day_hour.columns = ['day', 'hour', 'accidents']
-
-accidents_by_day_hour_pivoted = accidents_by_day_hour.pivot('hour', 'day', 'accidents')
-
-f, ax = plt.subplots(figsize=(20, 16))
-
-_ = sns.heatmap(accidents_by_day_hour_pivoted, annot=True, fmt='d', linewidths=.5, ax=ax)
-```
-
-
 ![png](reports/figures/output_15_0.png)
-
 
 **Daylight**
 
-
-```python
-_ = accident_samples.groupby(['daylight_yn']).size().plot(kind='bar')
-```
-
-
 ![png](reports/figures/output_17_0.png)
-
 
 **Holiday**
 
-
-```python
-_ = accident_samples.groupby(['holiday_yn']).size().plot(kind='bar')
-```
-
-
 ![png](reports/figures/output_19_0.png)
-
 
 **Rush Hour**
 
-
-```python
-_ = accident_samples.groupby(['rush_hour_yn']).size().plot(kind='bar')
-```
-
-
 ![png](reports/figures/output_21_0.png)
 
-
-### Weather Distribution
+## Weather Distribution
 
 **Temperature**
 
-
-```python
-_ = plt.hist(accident_samples.temp, bins=16)
-```
-
-
 ![png](reports/figures/output_24_0.png)
-
 
 **Wind**
 
-
-```python
-_ = plt.hist(accident_samples.wind_speed, bins=25)
-```
-
-
 ![png](reports/figures/output_26_0.png)
-
 
 **Precipitation**
 
-
-```python
-rain_plot = accident_samples[(accident_samples.precipitation > 0) & (accident_samples.precipitation < .5)].precipitation
-_ = plt.hist(rain_plot, bins=25)
-```
-
-
 ![png](reports/figures/output_28_0.png)
 
-
-### Roads
+## Roads
 
 **Type**
 
-
-```python
-road_classes = ['class_freeway', 'class_local', 'class_major', 'class_other', 'class_unimproved']
-
-_ = accident_samples[road_classes].idxmax(axis=1).value_counts().plot(kind='bar')
-```
-
-
 ![png](reports/figures/output_31_0.png)
-
 
 **Length**
 
-
-```python
-_ = plt.subplot(2, 1, 1)
-_ = plt.hist(accident_samples[accident_samples.road_length < 5280].road_length, bins=20)
-_ = plt.title('Road Length (less than 1-mile)')
-_ = plt.subplot(2, 1, 2)
-_ = plt.hist(accident_samples[accident_samples.road_length >= 5280].road_length, bins=30)
-_ = plt.title('Road Length (greater than 1-mile)')
-
-plt.rcParams['figure.figsize'][0] = 16
-plt.rcParams['figure.figsize'][1] = 20
-```
-
-
 ![png](reports/figures/output_33_0.png)
-
-
 
 ## Models
 
@@ -609,7 +336,6 @@ print(feature_importance_100)
     class_unimproved    0.006917
     holiday_yn          0.003110
     class_other         0.000698
-    dtype: float64
 
 
 # Conclusions
