@@ -78,6 +78,7 @@ target/
 # exclude data from source control by default
 /data/*
 !/data/processed/
+data/processed/rf_random.pickle
 
 # Mac OS-specific storage files
 .DS_Store
