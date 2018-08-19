@@ -19,11 +19,14 @@
         - [Join Accidents to Roads](#join-accidents-to-roads)
         - [Compiled Features](#compiled-features)
 - [Results](#results)
-    - [Maps](#maps)
-    - [Accident Counts by Date](#accident-counts-by-date)
-    - [Weather Distribution](#weather-distribution)
-    - [Roads](#roads)
-    - [Models](#models)
+    - [Statistics](#statistics)
+        - [Maps](#maps)
+        - [Accident Counts by Date](#accident-counts-by-date)
+        - [Weather Distribution](#weather-distribution)
+        - [Roads](#roads)
+    - [Predictive Models](#predictive-models)
+        - [Random Forest](#random-forest)
+        - [Hyperparameter Tuning](#hyperparameter-tuning)
 - [Conclusions](#conclusions)
 - [Limitations](#limitations)
 - [References](#references)
@@ -216,13 +219,15 @@ renamed_cols = ['date',
 
 # Results
 
-## Maps
+## Statistics
+
+### Maps
 
 ![png](reports/figures/output_3_0.png)
 
 ![png](reports/figures/output_4_1.png)
 
-## Accident Counts by Date
+### Accident Counts by Date
 
 **Month**
 
@@ -248,7 +253,7 @@ renamed_cols = ['date',
 
 ![png](reports/figures/output_21_0.png)
 
-## Weather Distribution
+### Weather Distribution
 
 **Temperature**
 
@@ -262,7 +267,7 @@ renamed_cols = ['date',
 
 ![png](reports/figures/output_28_0.png)
 
-## Roads
+### Roads
 
 **Type**
 
@@ -272,10 +277,20 @@ renamed_cols = ['date',
 
 ![png](reports/figures/output_33_0.png)
 
-## Models
+## Predictive Models
+
+### Random Forest
 
 ```python
-features = ['daylight_yn',
+data = pd.read_pickle('../../data/processed/all_samples.pickle')
+data['datetime'] = pd.to_datetime(data.date)
+data['day'] = data.datetime.dt.weekday_name
+data = pd.get_dummies(data, prefix='day', columns=['day'])
+```
+
+```python
+features = ['hour',
+            'daylight_yn',
             'holiday_yn',
             'rush_hour_yn',
             'temp',
@@ -286,57 +301,188 @@ features = ['daylight_yn',
             'class_local',
             'class_major',
             'class_other',
-            'class_unimproved']
+            'class_unimproved',
+            'day_Monday',
+            'day_Tuesday',
+            'day_Wednesday',
+            'day_Thursday',
+            'day_Friday',
+            'day_Saturday',
+            'day_Sunday']
 
 labels = 'accident_yn'
-```
-
-
-```python
 X = data[features]
 y = data[labels]
 ```
-
 
 ```python
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.4, random_state=42)
 ```
 
-
 ```python
-forest_100 = RandomForestClassifier(n_estimators=100)
+forest = RandomForestClassifier(n_estimators=100, random_state=42)
 
-forest_100.fit(X_train, y_train)
+forest.fit(X_train, y_train)
 
-y_pred_100 = forest_100.predict(X_test)
+y_pred = forest.predict(X_test)
 
 print('Random Forest (n=100)')
 
-print('Accuracy:', metrics.accuracy_score(y_test, y_pred_100))
-print('Precision:', metrics.precision_score(y_test, y_pred_100))
-print('Recall:', metrics.recall_score(y_test, y_pred_100))
+print('Accuracy:', metrics.accuracy_score(y_test, y_pred))
+print('Precision:', metrics.precision_score(y_test, y_pred))
+print('Recall:', metrics.recall_score(y_test, y_pred))
 
-feature_importance_100 = pd.Series(forest_100.feature_importances_, index=X.columns).sort_values(ascending=False)
-print(feature_importance_100)
+feature_importance = pd.Series(forest.feature_importances_, index=X.columns).sort_values(ascending=False)
+print(feature_importance)
+Accuracy: 0.828506238739118
+Precision: 0.6807163780053866
+Recall: 0.5856604028888927
+road_length         0.425048
+temp                0.156232
+wind_speed          0.098980
+class_major         0.094446
+hour                0.082337
+class_local         0.061327
+precipitation       0.013708
+daylight_yn         0.011967
+class_freeway       0.010668
+class_unimproved    0.007682
+holiday_yn          0.006807
+rush_hour_yn        0.004958
+day_Sunday          0.003734
+day_Monday          0.003699
+day_Tuesday         0.003684
+day_Wednesday       0.003595
+day_Thursday        0.003592
+day_Friday          0.003348
+day_Saturday        0.003213
+class_other         0.000974
 ```
 
-    Random Forest (n=100)
-    Accuracy: 0.8211645646353579
-    Precision: 0.656999452799215
-    Recall: 0.5889247839250377
-    road_length         0.550893
-    temp                0.163282
-    class_major         0.087130
-    wind_speed          0.078128
-    class_local         0.061115
-    daylight_yn         0.018803
-    precipitation       0.013709
-    class_freeway       0.009210
-    rush_hour_yn        0.007006
-    class_unimproved    0.006917
-    holiday_yn          0.003110
-    class_other         0.000698
 
+### Hyperparameter Tuning
+
+```python
+# Current Parameters
+pprint(forest.get_params())
+{'bootstrap': True,
+ 'class_weight': None,
+ 'criterion': 'gini',
+ 'max_depth': None,
+ 'max_features': 'auto',
+ 'max_leaf_nodes': None,
+ 'min_impurity_decrease': 0.0,
+ 'min_impurity_split': None,
+ 'min_samples_leaf': 1,
+ 'min_samples_split': 2,
+ 'min_weight_fraction_leaf': 0.0,
+ 'n_estimators': 100,
+ 'n_jobs': 1,
+ 'oob_score': False,
+ 'random_state': 42,
+ 'verbose': 0,
+ 'warm_start': False}
+```
+
+```python
+# Random Search
+
+# Number of trees in random forest
+n_estimators = [int(x) for x in np.linspace(start=50, stop=150, num=5)]
+
+# Number of features to consider at each split
+max_features = ['auto', 'sqrt']
+
+# Maximum number of levels in tree
+max_depth = [int(x) for x in np.linspace(start=10, stop=100, num=5)]
+max_depth.append(None)
+
+# Minimum number of samples required to split a node
+min_samples_split = [2, 5, 10]
+
+# Minimum number of samples required at each leaf node
+min_samples_leaf = [1, 2, 4]
+
+# Method of selecting samples for training each tree
+bootstrap = [True, False]
+
+random_grid = {'n_estimators': n_estimators,
+               'max_features': max_features,
+               'max_depth': max_depth,
+               'min_samples_split': min_samples_split,
+               'min_samples_leaf': min_samples_leaf,
+               'bootstrap': bootstrap}
+
+pprint(random_grid)
+{'bootstrap': [True, False],
+ 'max_depth': [10, 32, 55, 77, 100, None],
+ 'max_features': ['auto', 'sqrt'],
+ 'min_samples_leaf': [1, 2, 4],
+ 'min_samples_split': [2, 5, 10],
+ 'n_estimators': [50, 75, 100, 125, 150]}
+
+```
+
+```python
+rf = RandomForestClassifier()
+
+rf_random = RandomizedSearchCV(estimator = rf,
+                               param_distributions = random_grid,
+                               n_iter=20,
+                               n_jobs=-1,
+                               cv=3,
+                               verbose=2,
+                               random_state=42)
+
+rf_random.fit(X_train, y_train)
+```
+
+```python
+pprint(rf_random.best_params_)
+{'bootstrap': True,
+ 'max_depth': 100,
+ 'max_features': 'sqrt',
+ 'min_samples_leaf': 4,
+ 'min_samples_split': 10,
+ 'n_estimators': 125}
+
+```
+
+Base Model Performance
+Accuracy:	82.85%.
+Precision:	68.07%.
+Recall:	58.57%.
+
+Best Model Performance
+Accuracy:	84.23%.
+Precision:	72.33%.
+Recall:	59.33%.
+
+Accuracy Improvement:	1.66%.
+Precision Improvement:	6.26%.
+Recall Improvement:	1.30%.
+
+feature_importance_best:
+road_length         0.402501
+class_major         0.153864
+class_local         0.125439
+temp                0.083956
+hour                0.077053
+wind_speed          0.057979
+daylight_yn         0.022670
+class_unimproved    0.015779
+class_freeway       0.015053
+precipitation       0.008216
+rush_hour_yn        0.006984
+day_Sunday          0.004691
+holiday_yn          0.004369
+day_Saturday        0.003611
+day_Tuesday         0.003165
+day_Monday          0.003143
+day_Wednesday       0.003131
+day_Thursday        0.003121
+day_Friday          0.003031
+class_other         0.002244
 
 # Conclusions
 
