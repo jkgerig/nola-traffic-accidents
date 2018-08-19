@@ -223,59 +223,59 @@ renamed_cols = ['date',
 
 ### Maps
 
-![png](reports/figures/output_3_0.png)
+![png](reports/figures/map_road_types.png)
 
-![png](reports/figures/output_4_1.png)
+![png](reports/figures/map_accident_locations.png)
 
 ### Accident Counts by Date
 
 **Month**
 
-![png](reports/figures/output_11_0.png)
+![png](reports/figures/accidents_by_month.png)
 
 **Day of Week**
 
-![png](reports/figures/output_13_0.png)
+![png](reports/figures/accidents_by_day_of_week.png)
 
 **Hour of Day**
 
-![png](reports/figures/output_15_0.png)
+![png](reports/figures/accidents_time_heatmap.png)
 
 **Daylight**
 
-![png](reports/figures/output_17_0.png)
+![png](reports/figures/accidents_by_daylight.png)
 
 **Holiday**
 
-![png](reports/figures/output_19_0.png)
+![png](reports/figures/accidents_by_holiday.png)
 
 **Rush Hour**
 
-![png](reports/figures/output_21_0.png)
+![png](reports/figures/accidents_by_rush_hour.png)
 
 ### Weather Distribution
 
 **Temperature**
 
-![png](reports/figures/output_24_0.png)
+![png](reports/figures/accidents_by_temp.png)
 
 **Wind**
 
-![png](reports/figures/output_26_0.png)
+![png](reports/figures/accidents_by_wind.png)
 
 **Precipitation**
 
-![png](reports/figures/output_28_0.png)
+![png](reports/figures/accidents_by_precipitation.png)
 
 ### Roads
 
 **Type**
 
-![png](reports/figures/output_31_0.png)
+![png](reports/figures/road_types.png)
 
 **Length**
 
-![png](reports/figures/output_33_0.png)
+![png](reports/figures/road_lengths.png)
 
 ## Predictive Models
 
